@@ -1,0 +1,61 @@
+{
+    "name": "Fee",
+    "type": "object",
+    "properties": {
+      "student_id": {
+        "type": "string",
+        "description": "The record ID of the student"
+      },
+      "course_id": {
+        "type": "string",
+        "description": "The record ID of the course"
+      },
+      "amount": {
+        "type": "number",
+        "description": "The total fee amount"
+      },
+      "due_date": {
+        "type": "string",
+        "format": "date",
+        "description": "The date the fee is due"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "Paid",
+          "Due",
+          "Overdue"
+        ],
+        "default": "Due",
+        "description": "The current status of the fee payment"
+      },
+      "semester": {
+        "type": "string",
+        "description": "The academic semester for the fee"
+      },
+      "year": {
+        "type": "number",
+        "description": "The academic year for the fee"
+      },
+      "payment_date": {
+        "type": "string",
+        "format": "date",
+        "description": "The date the fee was paid"
+      }
+    },
+    "required": [
+      "student_id",
+      "course_id",
+      "amount",
+      "due_date",
+      "status"
+    ],
+    "rls": {
+      "read": {},
+      "write": {
+        "user_condition": {
+          "role": "admin"
+        }
+      }
+    }
+  }

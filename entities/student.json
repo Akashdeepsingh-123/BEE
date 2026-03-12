@@ -1,0 +1,100 @@
+{
+  "name": "Student",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Unique student ID"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "Student's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Student's last name"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Student email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "zip_code": {
+          "type": "string"
+        }
+      }
+    },
+    "major": {
+      "type": "string",
+      "description": "Student's major field of study"
+    },
+    "year": {
+      "type": "string",
+      "enum": [
+        "Freshman",
+        "Sophomore",
+        "Junior",
+        "Senior"
+      ],
+      "description": "Academic year level"
+    },
+    "gpa": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 4,
+      "description": "Current GPA"
+    },
+    "enrollment_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of enrollment"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Inactive",
+        "Graduated",
+        "Suspended"
+      ],
+      "default": "Active"
+    }
+  },
+  "required": [
+    "student_id",
+    "first_name",
+    "last_name",
+    "email",
+    "major",
+    "year"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "name": "Exam",
+  "type": "object",
+  "properties": {
+    "course_id": {
+      "type": "string",
+      "description": "Course ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "Exam title"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Midterm",
+        "Final",
+        "Quiz",
+        "Assignment",
+        "Project"
+      ],
+      "description": "Exam type"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Exam date"
+    },
+    "time": {
+      "type": "string",
+      "description": "Exam time"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Duration in minutes"
+    },
+    "location": {
+      "type": "string",
+      "description": "Exam location"
+    },
+    "total_marks": {
+      "type": "number",
+      "description": "Total marks for the exam"
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Exam instructions"
+    }
+  },
+  "required": [
+    "course_id",
+    "title",
+    "type",
+    "date",
+    "total_marks"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}

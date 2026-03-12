@@ -1,0 +1,97 @@
+{
+  "name": "Course",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Course code (e.g., CS101)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Course name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Course description"
+    },
+    "credits": {
+      "type": "number",
+      "description": "Course credits"
+    },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "description": "Course semester"
+    },
+    "year": {
+      "type": "number",
+      "description": "Academic year"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department offering the course"
+    },
+    "faculty_id": {
+      "type": "string",
+      "description": "ID of assigned Faculty record"
+    },
+    "max_students": {
+      "type": "number",
+      "default": 50,
+      "description": "Maximum number of students"
+    },
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday"
+            ]
+          }
+        },
+        "time": {
+          "type": "string",
+          "description": "Class time (e.g., 9:00-10:30)"
+        },
+        "room": {
+          "type": "string",
+          "description": "Classroom assignment"
+        }
+      }
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "credits",
+    "semester",
+    "year",
+    "department"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}

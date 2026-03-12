@@ -1,0 +1,54 @@
+{
+  "name": "Attendance",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Student record ID"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "Course record ID"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Attendance date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Present",
+        "Absent",
+        "Late",
+        "Excused"
+      ],
+      "description": "Attendance status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "student_id",
+    "course_id",
+    "date",
+    "status"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "name": "Enrollment",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Student record ID (not student_id field)"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "Course record ID"
+    },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "description": "Enrollment semester"
+    },
+    "year": {
+      "type": "number",
+      "description": "Enrollment year"
+    },
+    "enrollment_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of enrollment"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Enrolled",
+        "Dropped",
+        "Completed"
+      ],
+      "default": "Enrolled",
+      "description": "Enrollment status"
+    },
+    "final_grade": {
+      "type": "string",
+      "enum": [
+        "A+",
+        "A",
+        "A-",
+        "B+",
+        "B",
+        "B-",
+        "C+",
+        "C",
+        "C-",
+        "D+",
+        "D",
+        "F"
+      ],
+      "description": "Final grade received"
+    }
+  },
+  "required": [
+    "student_id",
+    "course_id",
+    "semester",
+    "year"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

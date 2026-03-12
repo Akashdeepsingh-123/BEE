@@ -1,0 +1,69 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "The title of the notification."
+    },
+    "message": {
+      "type": "string",
+      "description": "The main content of the notification."
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Name of the person sending the notification."
+    },
+    "sender_role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "faculty"
+      ],
+      "description": "Role of the sender."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_approval",
+        "published",
+        "rejected"
+      ],
+      "default": "pending_approval",
+      "description": "Notification approval status"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Admin email who approved the notification"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date when notification was approved"
+    }
+  },
+  "required": [
+    "title",
+    "message",
+    "sender_name",
+    "sender_role"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "faculty"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -17,6 +17,9 @@ import MyFeesPage from '@/PAGES/Myfees.jsx'
 import MyCoursesPage from '@/PAGES/mycorse.jsx'
 import MyAttendancePage from '@/PAGES/myattendace.jsx'
 import MyStudentsPage from '@/PAGES/mystudent.jsx'
+import EvaluationDemo from '@/PAGES/evaluationDemo.jsx'
+import ProfilePage from '@/PAGES/profile.jsx'
+import ChangePassword from '@/PAGES/ChangePassword.jsx'
 import { seedIfEmpty } from '@/entities/seed.js'
 import { bootstrapUsers } from '@/entities/bootstrapUsers.js'
 
@@ -83,6 +86,18 @@ const router = createBrowserRouter([
   {
     path: '/mystudents',
     element: <Layout><MyStudentsPage /></Layout>
+  },
+  {
+    path: '/evaluation-demo',
+    element: <Layout><EvaluationDemo /></Layout>
+  },
+  {
+    path: '/profile',
+    element: <Layout><ProfilePage /></Layout>
+  },
+  {
+    path: '/change-password',
+    element: <ChangePassword />
   }
 ])
 

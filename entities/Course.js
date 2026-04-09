@@ -58,12 +58,25 @@ export const Course = {
     }
   },
   async update(id, data) {
-    // API does not define update; fall back to local model.
-    return localCourse.update(id, data);
+    try {
+      return await request(`/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Falling back to local Course.update()', error);
+      return localCourse.update(id, data);
+    }
   },
   async delete(id) {
-    // API does not define delete; fall back to local model.
-    return localCourse.delete(id);
+    try {
+      return await request(`/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Falling back to local Course.delete()', error);
+      return localCourse.delete(id);
+    }
   },
 };
 

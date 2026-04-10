@@ -40,10 +40,13 @@ export default function Dashboard() {
             currentUser.profile = facultyProfile;
           } else {
             const studentProfile = allStudents.find(s => s.email.toLowerCase() === currentUser.email.toLowerCase());
-            console.log('Found student profile:', studentProfile);
             if (studentProfile) {
               currentUser.app_role = 'student';
               currentUser.profile = studentProfile;
+            } else {
+              // Fallback to the role provided by the authentication token
+              currentUser.app_role = currentUser.role || 'unassigned';
+              currentUser.profile = { id: currentUser.id || 'google_user' };
             }
           }
         }

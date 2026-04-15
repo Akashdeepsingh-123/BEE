@@ -14,7 +14,9 @@ import {
   BarChart3,
   Bell,
   LogOut,
-  DollarSign
+  DollarSign,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,12 +40,31 @@ export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loginEmail, setLoginEmail] = useState('admin@academiahub.com');
-  const [loginPassword, setLoginPassword] = useState('Admin@123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginName, setLoginName] = useState('');
+  const [loginConfirmPassword, setLoginConfirmPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [profilePic, setProfilePic] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState(null);
 
   useEffect(() => {
+    // Handle Google OAuth token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleToken = urlParams.get('googleToken');
+    const email = urlParams.get('email');
+    const role = urlParams.get('role');
+    
+    if (googleToken && email && role) {
+      const userObj = { email: email, role: role, token: googleToken };
+      localStorage.setItem('sms:currentUser', JSON.stringify(userObj));
+      window.history.replaceState({}, document.title, "/");
+    }
     loadUser();
   }, []);
 
@@ -92,8 +113,8 @@ export default function Layout({ children, currentPageName }) {
         return;
       }
 
-      // If no matching profile found for faculty or student, set as unassigned
-      setUser({ ...currentUser, app_role: 'unassigned' });
+      // If no matching profile found for faculty or student, fallback to the role from the token or set as unassigned
+      setUser({ ...currentUser, app_role: currentUser.role || 'unassigned' });
 
     } catch (error) {
       console.log("User not authenticated or error loading profiles:", error);
@@ -118,14 +139,49 @@ export default function Layout({ children, currentPageName }) {
     setLoginError('');
     setLoginSubmitting(true);
     try {
-      const loggedIn = await User.loginWithCredentials(loginEmail, loginPassword);
-      const target = getLandingPath(loggedIn.role);
-      window.location.href = target;
+      if (isSignUp) {
+        if (!loginName.trim()) throw new Error('Full Name is required');
+        if (loginPassword !== loginConfirmPassword) throw new Error('Passwords do not match');
+        if (!profilePic) throw new Error('Profile Picture is required');
+        
+        const formData = new FormData();
+        formData.append('email', loginEmail);
+        formData.append('password', loginPassword);
+        formData.append('full_name', loginName);
+        formData.append('role', 'student');
+        formData.append('profilePic', profilePic);
+        
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!res.ok) {
+          const text = await res.json();
+          throw new Error(text.message || 'Registration failed');
+        }
+        
+        const data = await res.json();
+        localStorage.setItem('sms:currentUser', JSON.stringify(data));
+        window.location.href = createPageUrl('Dashboard');
+      } else {
+        const loggedIn = await User.loginWithCredentials(loginEmail, loginPassword);
+        if (loggedIn.firstLogin) {
+          window.location.href = '/change-password';
+        } else {
+          const target = getLandingPath(loggedIn.role);
+          window.location.href = target;
+        }
+      }
     } catch (error) {
-      setLoginError(error.message || 'Unable to sign in');
+      setLoginError(error.message || 'Unable to authenticate');
     } finally {
       setLoginSubmitting(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/auth/google';
   };
 
   const handleLogout = async () => {
@@ -143,6 +199,12 @@ export default function Layout({ children, currentPageName }) {
         icon: BarChart3,
     };
 
+    const profileItem = {
+        title: "My Profile",
+        url: "/profile",
+        icon: Users,
+    };
+
     const notificationItem = {
       title: "Notifications",
       url: createPageUrl("Notifications"),
@@ -153,6 +215,7 @@ export default function Layout({ children, currentPageName }) {
         case 'admin':
             return [
                 dashboardItem,
+                profileItem,
                 { title: "Students", url: createPageUrl("Students"), icon: Users },
                 { title: "Faculty", url: createPageUrl("Faculty"), icon: Users },
                 { title: "Courses", url: createPageUrl("Courses"), icon: BookOpen },
@@ -160,25 +223,30 @@ export default function Layout({ children, currentPageName }) {
                 { title: "Fees", url: createPageUrl("Fees"), icon: DollarSign },
                 { title: "Attendance", url: createPageUrl("Attendance"), icon: Calendar },
                 { title: "Exams & Grades", url: createPageUrl("Exams"), icon: GraduationCap },
-                notificationItem
+                notificationItem,
+                { title: "Evaluation Demo", url: "/evaluation-demo", icon: ClipboardList }
             ];
         case 'faculty':
             return [
                 dashboardItem,
+                profileItem,
                 { title: "My Courses", url: createPageUrl("MyCourses"), icon: BookOpen },
                 { title: "My Students", url: createPageUrl("MyStudents"), icon: Users },
                 { title: "Attendance", url: createPageUrl("Attendance"), icon: Calendar },
                 { title: "Exams & Grades", url: createPageUrl("Exams"), icon: GraduationCap },
-                notificationItem
+                notificationItem,
+                { title: "Evaluation Demo", url: "/evaluation-demo", icon: ClipboardList }
             ];
         case 'student':
             return [
                 dashboardItem,
+                profileItem,
                 { title: "My Courses", url: createPageUrl("MyCourses"), icon: BookOpen },
                 { title: "My Attendance", url: createPageUrl("MyAttendance"), icon: Calendar },
                 { title: "My Grades", url: createPageUrl("MyGrades"), icon: GraduationCap },
                 { title: "My Fees", url: createPageUrl("MyFees"), icon: DollarSign },
-                notificationItem
+                notificationItem,
+                { title: "Evaluation Demo", url: "/evaluation-demo", icon: ClipboardList }
             ];
         default:
             return [];
@@ -210,26 +278,101 @@ export default function Layout({ children, currentPageName }) {
               <h1 className="text-2xl font-bold text-gray-800 mb-2">AcademiaHub</h1>
               <p className="text-gray-600 mb-6">Use your university email and temporary password.</p>
               <form className="space-y-4 text-left" onSubmit={handleLoginSubmit}>
+                {isSignUp && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <Input 
+                      type="text"
+                      value={loginName}
+                      onChange={(e) => setLoginName(e.target.value)}
+                      placeholder="John Doe"
+                      required={isSignUp}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <Input 
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="name@university.edu"
+                    placeholder="e.g., john@university.edu"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <Input 
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Temporary password"
-                    required
-                  />
+                  <div className="relative">
+                    <Input 
+                      type={showPassword ? "text" : "password"}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder={isSignUp ? "e.g., Str0ngP@ssw0rd!" : "Enter your password"}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
+                {isSignUp && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <div className="relative">
+                      <Input 
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={loginConfirmPassword}
+                        onChange={(e) => setLoginConfirmPassword(e.target.value)}
+                        placeholder="e.g., Str0ngP@ssw0rd!"
+                        required={isSignUp}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {isSignUp && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture (Required)</label>
+                    <Input 
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        setProfilePic(file);
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setProfilePicPreview(reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        } else {
+                          setProfilePicPreview(null);
+                        }
+                      }}
+                      required={isSignUp}
+                    />
+                    {profilePicPreview && (
+                      <div className="mt-3 flex flex-col items-center border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <span className="text-xs text-gray-500 mb-2">Preview (Auto-centered & cropped)</span>
+                        <img 
+                          src={profilePicPreview} 
+                          alt="Preview" 
+                          className="w-20 h-20 rounded-full object-cover object-center shadow-md border-2 border-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
                 {loginError && (
                   <p className="text-sm text-red-600">{loginError}</p>
                 )}
@@ -238,10 +381,27 @@ export default function Layout({ children, currentPageName }) {
                   disabled={loginSubmitting}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base rounded-lg font-semibold"
                 >
-                  {loginSubmitting ? 'Signing in...' : 'Sign In'}
+                  {loginSubmitting ? 'Authenticating...' : (isSignUp ? 'Sign Up' : 'Sign In')}
                 </Button>
-                <p className="text-xs text-gray-500 text-center">
-                  Admin default login: admin@academiahub.com / Admin@123
+                
+                <Button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  variant="outline"
+                  className="w-full py-3 text-base rounded-lg font-semibold flex gap-2 items-center justify-center"
+                >
+                  <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5" />
+                  Sign in with Google
+                </Button>
+                
+                <div className="text-sm text-center mt-2">
+                  <button type="button" className="text-blue-600 hover:underline" onClick={() => setIsSignUp(!isSignUp)}>
+                    {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+                  </button>
+                </div>
+                
+                <p className="text-xs text-gray-500 text-center mt-4">
+                  Admin login reference: admin@academiahub.com / Admin@123
                 </p>
               </form>
             </CardContent>
@@ -325,11 +485,15 @@ export default function Layout({ children, currentPageName }) {
 
           <SidebarFooter className="border-t border-gray-200 p-4">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-gray-600 font-medium text-sm">
-                  {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
-                </span>
-              </div>
+              {user.profilePic ? (
+                <img src={user.profilePic} alt="Profile" className="w-10 h-10 rounded-full object-cover object-center border border-gray-200" />
+              ) : (
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                  <span className="text-gray-600 font-medium text-sm">
+                    {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 text-sm truncate">
                   {user.full_name || user.email.split('@')[0]}

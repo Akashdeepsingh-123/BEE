@@ -118,31 +118,24 @@ export const User = {
   async loginWithCredentials(email, password) {
     if (!email || !password) throw new Error('Email and password are required');
 
-    // Try backend authentication first
-    try {
-      const res = await fetch(`${AUTH_API_BASE}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const res = await fetch(`${AUTH_API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Unable to sign in');
+    if (!res.ok) {
+      let errorMessage = 'Unable to sign in';
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        // Fallback if not JSON
       }
-
-      const user = await res.json();
-      writeCurrent(user);
-      return user;
-    } catch (apiError) {
-      console.warn('Auth API login failed, falling back to local auth:', apiError);
+      throw new Error(errorMessage);
     }
 
-    // Fallback to local, entity-based auth (existing behavior)
-    await this.ensureDefaultAdmin();
-    const user = await findByEmail(email);
-    if (!user) throw new Error('Account not found for this email');
-    if (user.password !== password) throw new Error('Invalid password. Please try again.');
+    const user = await res.json();
     writeCurrent(user);
     return user;
   },
@@ -151,113 +144,43 @@ export const User = {
     return true;
   },
   async syncStudentAccount(student, options = {}) {
-    if (!student || !student.email) return null;
-    const normalizedEmail = normalizeEmail(student.email);
-    const fullName = `${student.first_name || ''} ${student.last_name || ''}`.trim() || student.email;
-    let user = await findStudentAccount(student.id);
-    const isNewAccount = !user;
-
-    if (user) {
-      const updates = {};
-      if (normalizeEmail(user.email) !== normalizedEmail) updates.email = normalizedEmail;
-      if (user.full_name !== fullName) updates.full_name = fullName;
-      if (!user.password) {
-        updates.password = generateTempPassword('student');
-        if (options.sendEmail) {
-          await notifyTempPassword(normalizedEmail, updates.password, fullName, 'student');
-        }
-      }
-      if (Object.keys(updates).length > 0) {
-        user = await base.update(user.id, updates);
-      }
-      return user;
-    }
-
-    const password = generateTempPassword('student');
-    user = await base.create({
-      email: normalizedEmail,
-      full_name: fullName,
-      role: 'student',
-      password,
-      profile_type: 'student',
-      profile_id: student.id
-    });
-
-    if (options.sendEmail) {
-      await notifyTempPassword(normalizedEmail, password, fullName, 'student');
-    }
-
-    // Also attempt to register in backend (non-blocking)
-    try {
-      await fetch(`${AUTH_API_BASE}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          password,
-          role: 'student',
-          full_name: fullName,
-        }),
-      });
-    } catch (e) {
-      console.warn('Failed to register student in backend auth store', e);
-    }
-
-    return user;
+    // Handled entirely by backend controllers now
+    return null;
   },
   async syncFacultyAccount(faculty, options = {}) {
-    if (!faculty || !faculty.email) return null;
-    const normalizedEmail = normalizeEmail(faculty.email);
-    const fullName = `${faculty.first_name || ''} ${faculty.last_name || ''}`.trim() || faculty.email;
-    let user = await findFacultyAccount(faculty.id);
-    const isNewAccount = !user;
-
-    if (user) {
-      const updates = {};
-      if (normalizeEmail(user.email) !== normalizedEmail) updates.email = normalizedEmail;
-      if (user.full_name !== fullName) updates.full_name = fullName;
-      if (!user.password) {
-        updates.password = generateTempPassword('faculty');
-        if (options.sendEmail) {
-          await notifyTempPassword(normalizedEmail, updates.password, fullName, 'faculty');
-        }
-      }
-      if (Object.keys(updates).length > 0) {
-        user = await base.update(user.id, updates);
-      }
-      return user;
-    }
-
-    const password = generateTempPassword('faculty');
-    user = await base.create({
-      email: normalizedEmail,
-      full_name: fullName,
-      role: 'faculty',
-      password,
-      profile_type: 'faculty',
-      profile_id: faculty.id
+    // Handled entirely by backend controllers now
+    return null;
+  },
+  async updateProfile(id, formData) {
+    const res = await fetch(`${AUTH_API_BASE}/profile/${id}`, {
+      method: 'PUT',
+      body: formData,
     });
 
-    if (options.sendEmail) {
-      await notifyTempPassword(normalizedEmail, password, fullName, 'faculty');
+    if (!res.ok) {
+      let errorMessage = 'Unable to update profile';
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {}
+      throw new Error(errorMessage);
     }
 
-    // Also attempt to register in backend (non-blocking)
+    const updatedUser = await res.json();
+    
+    // Update current user if this is the logged in user
+    const current = readCurrent();
+    if (current && (current.id === updatedUser.id || current._id === updatedUser.id)) {
+      writeCurrent({ ...current, ...updatedUser });
+    }
+
+    // Attempt to update local base entity as well
     try {
-      await fetch(`${AUTH_API_BASE}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          password,
-          role: 'faculty',
-          full_name: fullName,
-        }),
-      });
+      await base.update(id, updatedUser);
     } catch (e) {
-      console.warn('Failed to register faculty in backend auth store', e);
+      // Ignore if not found in local db, since MongoDB might be the primary
     }
 
-    return user;
+    return updatedUser;
   }
 };

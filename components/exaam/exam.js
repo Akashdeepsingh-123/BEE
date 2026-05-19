@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
 import { Course } from '@/entities/Course';
 
+
 export default function ExamForm({ exam, courseId, onSubmit, onCancel }) {
     const [formData, setFormData] = useState(exam || {
         course_id: courseId || '',

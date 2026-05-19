@@ -9,6 +9,7 @@ export async function markAttendance(req, res) {
     }
 
     const attendanceDate = date ? new Date(date) : new Date();
+    
 
     const record = new AttendanceModel({
       studentId,

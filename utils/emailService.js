@@ -10,6 +10,7 @@
  * Send a temporary password email to a user
  * @param {string} to - Recipient email address
  * @param {string} password - Temporary password
+ * 
  * @param {string} name - Recipient's full name
  * @param {string} role - User role (student/faculty)
  * @returns {Promise<boolean>} - Success status
